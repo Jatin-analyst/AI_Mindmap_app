@@ -1,19 +1,18 @@
 """
-AI Helper utilities for interacting with Llama 3 via Kiro.
-Includes retry logic and response validation.
+AI Helper utilities for interacting with AI models.
+Supports OpenAI, Groq, and other providers.
 """
 import json
 import time
+import os
 from typing import Any, Callable
 from functools import wraps
 
 
-# Mock LLM function for development
-# In production, this would be: from kiro import llm
 def llm(prompt: str) -> str:
     """
-    Mock LLM function that simulates AI responses.
-    In production, this would call the actual Kiro llm function.
+    Call AI model to generate response.
+    Supports multiple providers via environment variables.
     
     Args:
         prompt: The prompt to send to the AI
@@ -21,42 +20,105 @@ def llm(prompt: str) -> str:
     Returns:
         AI-generated response as a string
     """
-    # This is a mock implementation
-    # In production, replace with: from kiro import llm
+    # Check which AI provider to use
+    provider = os.getenv("AI_PROVIDER", "openai").lower()
     
-    # Simulate AI processing
-    time.sleep(0.1)
-    
-    # Parse the prompt to determine what kind of response to generate
-    if "topics" in prompt.lower() or "headings" in prompt.lower():
-        # Return mock topics
-        return json.dumps([
-            "Introduction",
-            "Background",
-            "Methodology",
-            "Results",
-            "Discussion",
-            "Conclusion",
-            "References",
-            "Appendix",
-            "Future Work",
-            "Acknowledgments"
-        ])
-    elif "mind map" in prompt.lower():
-        # Return mock mind map
-        return json.dumps({
-            "topic": "Main Topic",
-            "nodes": [
-                {"id": 1, "parent": 0, "text": "Subtopic 1"},
-                {"id": 2, "parent": 0, "text": "Subtopic 2"},
-                {"id": 3, "parent": 1, "text": "Detail 1.1"},
-                {"id": 4, "parent": 1, "text": "Detail 1.2"},
-                {"id": 5, "parent": 2, "text": "Detail 2.1"}
-            ]
-        })
+    if provider == "openai":
+        return _call_openai(prompt)
+    elif provider == "groq":
+        return _call_groq(prompt)
+    elif provider == "anthropic":
+        return _call_anthropic(prompt)
     else:
-        # Return filtered text
-        return "This is filtered content related to the specified topic. " * 10
+        raise ValueError(f"Unsupported AI provider: {provider}")
+
+
+def _call_openai(prompt: str) -> str:
+    """Call OpenAI API."""
+    try:
+        from openai import OpenAI
+        
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY environment variable not set")
+        
+        client = OpenAI(api_key=api_key)
+        model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+        
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that analyzes documents and creates structured outputs. Always respond with valid JSON when requested."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=2000
+        )
+        
+        return response.choices[0].message.content
+        
+    except ImportError:
+        raise ImportError("OpenAI package not installed. Run: pip install openai")
+    except Exception as e:
+        raise Exception(f"OpenAI API error: {str(e)}")
+
+
+def _call_groq(prompt: str) -> str:
+    """Call Groq API (fast Llama models)."""
+    try:
+        from groq import Groq
+        
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError("GROQ_API_KEY environment variable not set")
+        
+        client = Groq(api_key=api_key)
+        model = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")
+        
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that analyzes documents and creates structured outputs. Always respond with valid JSON when requested."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=2000
+        )
+        
+        return response.choices[0].message.content
+        
+    except ImportError:
+        raise ImportError("Groq package not installed. Run: pip install groq")
+    except Exception as e:
+        raise Exception(f"Groq API error: {str(e)}")
+
+
+def _call_anthropic(prompt: str) -> str:
+    """Call Anthropic Claude API."""
+    try:
+        import anthropic
+        
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise ValueError("ANTHROPIC_API_KEY environment variable not set")
+        
+        client = anthropic.Anthropic(api_key=api_key)
+        model = os.getenv("ANTHROPIC_MODEL", "claude-3-sonnet-20240229")
+        
+        response = client.messages.create(
+            model=model,
+            max_tokens=2000,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        
+        return response.content[0].text
+        
+    except ImportError:
+        raise ImportError("Anthropic package not installed. Run: pip install anthropic")
+    except Exception as e:
+        raise Exception(f"Anthropic API error: {str(e)}")
 
 
 def retry_on_failure(max_retries: int = 1, timeout: int = 60):

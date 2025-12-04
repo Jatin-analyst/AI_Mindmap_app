@@ -10,3 +10,5 @@ streamlit-agraph>=0.0.45
 requests>=2.31.0
 python-dotenv>=1.0.0
 reportlab>=4.0.0
+openai>=1.0.0
+groq>=0.4.0

@@ -2,6 +2,12 @@
 
 An AI-powered tool for college students to transform PDF documents into interactive, visual mind maps.
 
+## 🚀 Quick Start
+
+**New here?** Read **[START_HERE.md](START_HERE.md)** for complete setup guide!
+
+**Just need AI key?** Read **[QUICK_FIX.md](QUICK_FIX.md)** for 5-minute setup!
+
 ## Features
 
 - 📄 Upload PDF documents (up to 80MB)
@@ -146,6 +152,17 @@ See `.kiro/specs/pdf-mindmap-generator/` for full specifications.
 
 MIT License
 
+
+## ⚠️ IMPORTANT: AI Configuration Required
+
+The app needs an AI API key to work properly. Without it, you'll get generic/mock results.
+
+**Quick Setup (5 minutes):**
+1. Get FREE Groq API key from [console.groq.com](https://console.groq.com)
+2. Add to Streamlit Cloud Secrets (see `QUICK_FIX.md`)
+3. Done! Your app will now analyze PDFs correctly ✅
+
+**See:** `QUICK_FIX.md` for step-by-step instructions
 
 ## Deployment to Streamlit Cloud
 
