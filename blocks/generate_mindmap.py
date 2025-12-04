@@ -27,27 +27,31 @@ def generate_mindmap(topic_text: str) -> Dict[str, dict]:
         raise ValueError("Topic text cannot be empty")
     
     # Construct detailed prompt with expected JSON format
-    prompt = f"""
-    Create a mind map in JSON format from the following text.
+    prompt = f"""Create a mind map in JSON format from the following text.
 
-    Format:
-    {{
-      "topic": "Main Topic",
-      "nodes": [
-        {{"id": 1, "parent": 0, "text": "Subtopic"}},
-        {{"id": 2, "parent": 1, "text": "Details"}}
-      ]
-    }}
+IMPORTANT: Return ONLY valid JSON, no explanations or markdown.
 
-    Rules:
-    - The "topic" field should contain the main topic
-    - Each node must have "id" (unique integer), "parent" (integer, 0 for root children), and "text" (string)
-    - Support at least 4 levels of hierarchy
-    - All parent IDs must reference valid node IDs or be 0
+Required format:
+{{
+  "topic": "Main Topic",
+  "nodes": [
+    {{"id": 1, "parent": 0, "text": "Subtopic"}},
+    {{"id": 2, "parent": 1, "text": "Details"}}
+  ]
+}}
 
-    Text:
-    {topic_text}
-    """
+Rules:
+- Return ONLY the JSON object, nothing else
+- "topic" field: main topic as string
+- "nodes" field: array of node objects
+- Each node: "id" (unique integer), "parent" (integer, 0 for root), "text" (string)
+- Create at least 4 levels of hierarchy
+- All parent IDs must reference valid node IDs or be 0
+
+Text to analyze:
+{topic_text}
+
+Return only the JSON:"""
     
     # Call AI
     response = llm(prompt)
@@ -100,4 +104,6 @@ def generate_mindmap(topic_text: str) -> Dict[str, dict]:
         return {"mindmap": mindmap}
         
     except (json.JSONDecodeError, ValueError) as e:
-        raise ValueError(f"Failed to generate valid mind map: {str(e)}")
+        # Include response preview in error for debugging
+        response_preview = response[:500] if response else "No response"
+        raise ValueError(f"Failed to generate valid mind map: {str(e)}. AI response preview: {response_preview}")

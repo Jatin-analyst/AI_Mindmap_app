@@ -5,6 +5,7 @@ Supports OpenAI, Groq, and other providers.
 import json
 import time
 import os
+import re
 from typing import Any, Callable
 from functools import wraps
 
@@ -157,9 +158,10 @@ def retry_on_failure(max_retries: int = 1, timeout: int = 60):
 def validate_json_response(response: str) -> dict:
     """
     Validate and parse JSON response from AI.
+    Handles cases where AI adds text before/after JSON.
     
     Args:
-        response: JSON string from AI
+        response: JSON string from AI (may contain extra text)
         
     Returns:
         Parsed JSON as dictionary
@@ -167,11 +169,47 @@ def validate_json_response(response: str) -> dict:
     Raises:
         ValueError: If response is not valid JSON
     """
+    if not response or not response.strip():
+        raise ValueError("Empty response from AI")
+    
+    # Try to parse as-is first
     try:
         parsed = json.loads(response)
         return parsed
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON response from AI: {str(e)}")
+    except json.JSONDecodeError:
+        pass
+    
+    # Try to extract JSON from markdown code blocks
+    import re
+    
+    # Look for JSON in ```json ... ``` blocks
+    json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response, re.DOTALL)
+    if json_match:
+        try:
+            parsed = json.loads(json_match.group(1))
+            return parsed
+        except json.JSONDecodeError:
+            pass
+    
+    # Look for JSON object anywhere in the response
+    json_match = re.search(r'\{.*\}', response, re.DOTALL)
+    if json_match:
+        try:
+            parsed = json.loads(json_match.group(0))
+            return parsed
+        except json.JSONDecodeError:
+            pass
+    
+    # Look for JSON array anywhere in the response
+    array_match = re.search(r'\[.*\]', response, re.DOTALL)
+    if array_match:
+        try:
+            parsed = json.loads(array_match.group(0))
+            return parsed
+        except json.JSONDecodeError:
+            pass
+    
+    raise ValueError(f"Could not extract valid JSON from AI response. Response preview: {response[:200]}")
 
 
 def truncate_text(text: str, max_tokens: int = 10000) -> str:

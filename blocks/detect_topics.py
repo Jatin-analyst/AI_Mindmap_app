@@ -26,14 +26,16 @@ def detect_topics(raw_text: str) -> Dict[str, List[str]]:
     truncated_text = raw_text[:6000] if len(raw_text) > 6000 else raw_text
     
     # Construct prompt for AI
-    prompt = f"""
-    Extract a clean list of topics/headings from the following text.
-    Return JSON list only:
-    ["Topic 1", "Topic 2", ...]
-    
-    Text:
-    {truncated_text}
-    """
+    prompt = f"""Extract the main topics and headings from this text.
+
+IMPORTANT: Return ONLY a JSON array, no explanations or markdown.
+
+Format: ["Topic 1", "Topic 2", "Topic 3"]
+
+Text to analyze:
+{truncated_text}
+
+Return only the JSON array:"""
     
     # Call AI
     response = llm(prompt)
