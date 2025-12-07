@@ -196,12 +196,23 @@ if st.session_state.mindmap:
     
     mindmap = st.session_state.mindmap
     
-    # Display mind map as JSON (simple visualization)
+    # Display mind map info
     st.markdown(f"**Topic:** {mindmap.get('topic', 'N/A')}")
     st.markdown(f"**Number of Nodes:** {len(mindmap.get('nodes', []))}")
     
-    # Display nodes in a structured way
-    with st.expander("📊 View Mind Map Structure", expanded=True):
+    # Create visual mind map
+    try:
+        from utils.mindmap_visualizer import create_mindmap_visualization
+        
+        fig = create_mindmap_visualization(mindmap)
+        st.plotly_chart(fig, use_container_width=True)
+        
+    except Exception as e:
+        st.warning(f"Could not create visual mind map: {str(e)}")
+        st.info("Showing text-based structure instead:")
+    
+    # Display nodes in a structured way (as fallback or additional view)
+    with st.expander("📊 View Text Structure", expanded=False):
         # Group nodes by parent
         nodes_by_parent = {}
         for node in mindmap.get("nodes", []):
